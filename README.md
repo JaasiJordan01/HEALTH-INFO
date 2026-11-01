@@ -4,15 +4,15 @@ A responsive, browser-based demonstration of the UHealth Alert console project. 
 
 ## Demo sign-in accounts
 
-Choose **Create a student account** to register with an email ending in `@students.cavebndish.ac.ug` and a password of at least 8 characters. Accounts are saved in that browser. Return to **Sign in** to log in. Staff accounts cannot be self-registered; use the sample staff accounts:
+Choose **Create a student account** to register with an email ending in `@students.cavendish.ac.ug` and a password of at least 8 characters. Accounts are saved in that browser. Return to **Sign in** to log in. Staff accounts cannot be self-registered; use the sample staff accounts:
 
 | Role | Email | Password |
 | --- | --- | --- |
-| Student | `km275497@students.cavebndish.ac.ug` | `student123` |
-| Health Officer | `health.officer@cavebndish.ac.ug` | `health123` |
-| Safety Team | `safety@cavebndish.ac.ug` | `safety123` |
-| Welfare Officer | `welfare@cavebndish.ac.ug` | `welfare123` |
-| Administrator | `admin@cavebndish.ac.ug` | `admin123` |
+| Student | `km275497@students.cavendish.ac.ug` | `student123` |
+| Health Officer | `health.officer@cavendish.ac.ug` | `health123` |
+| Safety Team | `safety@cavendish.ac.ug` | `safety123` |
+| Welfare Officer | `welfare@cavendish.ac.ug` | `welfare123` |
+| Administrator | `admin@cavendish.ac.ug` | `admin123` |
 
 Sample passwords are checked against their SHA-256 digests, and newly created student passwords are stored as salted PBKDF2 hashes in browser `localStorage`. This is still only a client-side demo: accounts exist on one device, browser checks can be bypassed, and the sample credentials are public. It does not provide production-grade authentication.
 

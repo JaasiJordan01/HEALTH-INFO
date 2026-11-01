@@ -3,20 +3,20 @@
 const STORAGE_KEY = "uhealth-alert-demo-v1";
 const ACCOUNTS_STORAGE_KEY = "uhealth-alert-demo-accounts-v1";
 const roles = {
-  student: { label: "Student", name: "Kato Moses", email: "km275497@students.cavebndish.ac.ug" },
-  health: { label: "Health Officer", name: "Dr. Sarah Namutebi", email: "health.officer@cavebndish.ac.ug" },
-  safety: { label: "Safety Team", name: "Mr. Peter Okello", email: "safety@cavebndish.ac.ug" },
-  welfare: { label: "Welfare Officer", name: "Ms. Grace Ayebare", email: "welfare@cavebndish.ac.ug" },
-  admin: { label: "Administrator", name: "System Administrator", email: "admin@cavebndish.ac.ug" }
+  student: { label: "Student", name: "Kato Moses", email: "km275497@students.cavendish.ac.ug" },
+  health: { label: "Health Officer", name: "Dr. Sarah Namutebi", email: "health.officer@cavendish.ac.ug" },
+  safety: { label: "Safety Team", name: "Mr. Peter Okello", email: "safety@cavendish.ac.ug" },
+  welfare: { label: "Welfare Officer", name: "Ms. Grace Ayebare", email: "welfare@cavendish.ac.ug" },
+  admin: { label: "Administrator", name: "System Administrator", email: "admin@cavendish.ac.ug" }
 };
 const demoAccounts = [
-  { role: "student", email: "km275497@students.cavebndish.ac.ug", password: "student123", passwordHash: "sha256$703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b" },
-  { role: "health", email: "health.officer@cavebndish.ac.ug", password: "health123", passwordHash: "sha256$0f126bc0014eec6416c352d385282c5d91585af18728553c84c23e9fa11fa275" },
-  { role: "safety", email: "safety@cavebndish.ac.ug", password: "safety123", passwordHash: "sha256$9a72c3f322b7c34eef4c4558f6114664956bbcd448da5fa4377185a188b6a4ce" },
-  { role: "welfare", email: "welfare@cavebndish.ac.ug", password: "welfare123", passwordHash: "sha256$91110f3a1aaed669224cdb5619a5d7ad031b1c106d0e8a0dfc86d4137ce7df7e" },
-  { role: "admin", email: "admin@cavebndish.ac.ug", password: "admin123", passwordHash: "sha256$240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9" }
+  { role: "student", email: "km275497@students.cavendish.ac.ug", password: "student123", passwordHash: "sha256$703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b" },
+  { role: "health", email: "health.officer@cavendish.ac.ug", password: "health123", passwordHash: "sha256$0f126bc0014eec6416c352d385282c5d91585af18728553c84c23e9fa11fa275" },
+  { role: "safety", email: "safety@cavendish.ac.ug", password: "safety123", passwordHash: "sha256$9a72c3f322b7c34eef4c4558f6114664956bbcd448da5fa4377185a188b6a4ce" },
+  { role: "welfare", email: "welfare@cavendish.ac.ug", password: "welfare123", passwordHash: "sha256$91110f3a1aaed669224cdb5619a5d7ad031b1c106d0e8a0dfc86d4137ce7df7e" },
+  { role: "admin", email: "admin@cavendish.ac.ug", password: "admin123", passwordHash: "sha256$240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9" }
 ];
-const studentEmailDomain = "@students.cavebndish.ac.ug";
+const studentEmailDomain = "@students.cavendish.ac.ug";
 const passwordIterations = 120000;
 
 const initialState = {
@@ -157,7 +157,7 @@ function renderRegisterForm() {
     <div class="card-heading"><h2>Create a student account</h2></div>
     <div class="form-grid">
       <div class="field full"><label for="register-name">Full name</label><input id="register-name" autocomplete="name" maxlength="80" required></div>
-      <div class="field full"><label for="register-email">University student email</label><input id="register-email" type="email" autocomplete="email" required placeholder="name@students.cavebndish.ac.ug"><small class="field-hint">Use an address ending in ${studentEmailDomain}</small></div>
+      <div class="field full"><label for="register-email">University student email</label><input id="register-email" type="email" autocomplete="email" required placeholder="name@students.cavendish.ac.ug"><small class="field-hint">Use an address ending in ${studentEmailDomain}</small></div>
       <div class="field full"><label for="register-password">Password</label><input id="register-password" type="password" autocomplete="new-password" minlength="8" required><small class="field-hint">At least 8 characters.</small></div>
       <div class="field full"><label for="register-confirm">Confirm password</label><input id="register-confirm" type="password" autocomplete="new-password" minlength="8" required></div>
     </div>
@@ -297,9 +297,9 @@ function reportRow(report) {
 function renderStudents() {
   if (activeRole === "student") return renderStudentDashboard();
   const students = [
-    ["Kato Moses", "km275497@students.cavebndish.ac.ug", "Faculty of Science & Technology", "Year 2"],
-    ["Achieng Betty", "ab298114@students.cavebndish.ac.ug", "Faculty of Health Sciences", "Year 3"],
-    ["Nsubuga Ivan", "ni301245@students.cavebndish.ac.ug", "Faculty of Business", "Year 1"]
+    ["Kato Moses", "km275497@students.cavendish.ac.ug", "Faculty of Science & Technology", "Year 2"],
+    ["Achieng Betty", "ab298114@students.cavendish.ac.ug", "Faculty of Health Sciences", "Year 3"],
+    ["Nsubuga Ivan", "ni301245@students.cavendish.ac.ug", "Faculty of Business", "Year 1"]
   ];
   return `<div class="page-heading"><div><p class="eyebrow">DEMO DIRECTORY</p><h1>Students</h1><p class="subtitle">Sample records only; no live student database is connected.</p></div></div>
     <div class="callout warning"><strong>Sample data:</strong> These names and records are for demonstration. Do not treat this static page as a student information system.</div>
