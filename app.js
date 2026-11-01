@@ -1,6 +1,7 @@
 "use strict";
 
 const STORAGE_KEY = "uhealth-alert-demo-v1";
+const ACCOUNTS_STORAGE_KEY = "uhealth-alert-demo-accounts-v1";
 const roles = {
   student: { label: "Student", name: "Kato Moses", email: "km275497@students.cavebndish.ac.ug" },
   health: { label: "Health Officer", name: "Dr. Sarah Namutebi", email: "health.officer@cavebndish.ac.ug" },
@@ -9,12 +10,14 @@ const roles = {
   admin: { label: "Administrator", name: "System Administrator", email: "admin@cavebndish.ac.ug" }
 };
 const demoAccounts = [
-  { role: "student", email: "km275497@students.cavebndish.ac.ug", password: "student123" },
-  { role: "health", email: "health.officer@cavebndish.ac.ug", password: "health123" },
-  { role: "safety", email: "safety@cavebndish.ac.ug", password: "safety123" },
-  { role: "welfare", email: "welfare@cavebndish.ac.ug", password: "welfare123" },
-  { role: "admin", email: "admin@cavebndish.ac.ug", password: "admin123" }
+  { role: "student", email: "km275497@students.cavebndish.ac.ug", password: "student123", passwordHash: "sha256$703b0a3d6ad75b649a28adde7d83c6251da457549263bc7ff45ec709b0a8448b" },
+  { role: "health", email: "health.officer@cavebndish.ac.ug", password: "health123", passwordHash: "sha256$0f126bc0014eec6416c352d385282c5d91585af18728553c84c23e9fa11fa275" },
+  { role: "safety", email: "safety@cavebndish.ac.ug", password: "safety123", passwordHash: "sha256$9a72c3f322b7c34eef4c4558f6114664956bbcd448da5fa4377185a188b6a4ce" },
+  { role: "welfare", email: "welfare@cavebndish.ac.ug", password: "welfare123", passwordHash: "sha256$91110f3a1aaed669224cdb5619a5d7ad031b1c106d0e8a0dfc86d4137ce7df7e" },
+  { role: "admin", email: "admin@cavebndish.ac.ug", password: "admin123", passwordHash: "sha256$240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9" }
 ];
+const studentEmailDomain = "@students.cavebndish.ac.ug";
+const passwordIterations = 120000;
 
 const initialState = {
   alerts: [
@@ -34,7 +37,9 @@ function daysFromNow(days) { return new Date(Date.now() + days * 86400000).toISO
 
 let state = loadState();
 let activeRole = null;
+let signedInUser = null;
 let currentPage = "dashboard";
+let authView = "signin";
 let toastTimer;
 
 function loadState() {
@@ -97,7 +102,12 @@ function render() {
   const root = document.querySelector("#app");
   if (!activeRole) {
     root.innerHTML = renderLogin();
-    root.querySelector("#login-form")?.addEventListener("submit", login);
+    root.querySelector("#login-form")?.addEventListener("submit", handleSignIn);
+    root.querySelector("#register-form")?.addEventListener("submit", handleRegister);
+    root.querySelectorAll("[data-auth-view]").forEach(button => button.addEventListener("click", () => {
+      authView = button.dataset.authView;
+      render();
+    }));
     return;
   }
   root.innerHTML = renderShell();
@@ -106,6 +116,7 @@ function render() {
 }
 
 function renderLogin() {
+  const isRegister = authView === "register";
   return `<main class="login-wrap">
     <section class="login-panel" aria-labelledby="welcome-title">
       <div class="login-top">
@@ -114,33 +125,54 @@ function renderLogin() {
         <h1 id="welcome-title">Wellbeing support, connected to campus.</h1>
         <p class="subtitle">A simple place to check campus health alerts, find student support resources, and coordinate staff response.</p>
       </div>
-      <form class="login-form" id="login-form">
-        <div class="card-heading"><h2>Sign in to your demo account</h2></div>
-        <div class="form-grid">
-          <div class="field full"><label for="login-role">Account type</label><select id="login-role" required><option value="student">Student</option><option value="staff">Staff</option></select></div>
-          <div class="field full"><label for="login-email">University email</label><input id="login-email" type="email" autocomplete="username" required placeholder="you@university.edu"></div>
-          <div class="field full"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required placeholder="Enter your demo password"></div>
-        </div>
-        <p id="login-error" class="login-error" role="alert" hidden></p>
-        <div class="form-actions"><button class="button" type="submit">Sign in</button></div>
-      </form>
+      ${isRegister ? renderRegisterForm() : renderSignInForm()}
       <section class="demo-credentials" aria-labelledby="demo-credentials-title">
         <h2 id="demo-credentials-title">Sample demo logins</h2>
-        <p>These public sample credentials are only for testing this static demo.</p>
+        <p>Use these accounts to try the student and staff dashboards.</p>
         <div class="table-wrap"><table><thead><tr><th>Role</th><th>Email</th><th>Password</th></tr></thead><tbody>
           ${demoAccounts.map(account => `<tr><td>${escapeHtml(roles[account.role].label)}</td><td>${escapeHtml(account.email)}</td><td><code>${escapeHtml(account.password)}</code></td></tr>`).join("")}
         </tbody></table></div>
       </section>
-      <div class="login-bottom"><div class="callout warning"><strong>Demo only — not real authentication.</strong> GitHub Pages serves static files. Demo passwords are visible in this site's source and can be bypassed; do not use real credentials or sensitive data. Use a secure backend and identity provider for production.</div></div>
+      <div class="login-bottom"><div class="callout warning"><strong>Demo only — not real authentication.</strong> New accounts are saved in this browser only. GitHub Pages has no server, so accounts cannot be shared across devices and browser-side checks can be bypassed. Do not enter real credentials or sensitive data.</div></div>
     </section>
   </main>`;
+}
+
+function renderSignInForm() {
+  return `<form class="login-form" id="login-form">
+    <div class="card-heading"><h2>Sign in</h2></div>
+    <div class="form-grid">
+      <div class="field full"><label for="login-role">Account type</label><select id="login-role" required><option value="student">Student</option><option value="staff">Staff</option></select></div>
+      <div class="field full"><label for="login-email">University email</label><input id="login-email" type="email" autocomplete="username" required placeholder="you@university.edu"></div>
+      <div class="field full"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required placeholder="Enter your password"></div>
+    </div>
+    <p id="login-error" class="login-error" role="alert" aria-live="assertive" hidden></p>
+    <div class="form-actions"><button class="button" type="submit">Sign in</button></div>
+    <p class="auth-switch">New student? <button class="text-button" type="button" data-auth-view="register">Create a student account</button></p>
+  </form>`;
+}
+
+function renderRegisterForm() {
+  return `<form class="login-form" id="register-form">
+    <div class="card-heading"><h2>Create a student account</h2></div>
+    <div class="form-grid">
+      <div class="field full"><label for="register-name">Full name</label><input id="register-name" autocomplete="name" maxlength="80" required></div>
+      <div class="field full"><label for="register-email">University student email</label><input id="register-email" type="email" autocomplete="email" required placeholder="name@students.cavebndish.ac.ug"><small class="field-hint">Use an address ending in ${studentEmailDomain}</small></div>
+      <div class="field full"><label for="register-password">Password</label><input id="register-password" type="password" autocomplete="new-password" minlength="8" required><small class="field-hint">At least 8 characters.</small></div>
+      <div class="field full"><label for="register-confirm">Confirm password</label><input id="register-confirm" type="password" autocomplete="new-password" minlength="8" required></div>
+    </div>
+    <p id="register-error" class="login-error" role="alert" aria-live="assertive" hidden></p>
+    <p id="register-success" class="login-success" role="status" aria-live="polite" hidden></p>
+    <div class="form-actions"><button class="button" type="submit">Create account</button></div>
+    <p class="auth-switch">Already registered? <button class="text-button" type="button" data-auth-view="signin">Sign in</button></p>
+  </form>`;
 }
 
 function renderShell() {
   const nav = activeRole === "student"
     ? [["dashboard", "⌂", "Overview"], ["alerts", "◉", "Health alerts"], ["wellbeing", "♡", "Wellbeing"], ["reports", "＋", "Get support"]]
     : [["dashboard", "⌂", "Overview"], ["alerts", "◉", "Health alerts"], ["reports", "▤", "Reports"], ["students", "♧", "Students"]];
-  const person = roles[activeRole];
+  const person = signedInUser || roles[activeRole];
   const pageTitle = pageTitles()[currentPage] || "Overview";
   return `<div class="app-shell">
     <aside class="sidebar">
@@ -180,10 +212,11 @@ function renderPage() {
 function renderStudentDashboard() {
   const alerts = activeAlerts();
   const recent = alerts.slice(0, 2);
-  return `<div class="page-heading"><div><p class="eyebrow">YOUR CAMPUS, AT A GLANCE</p><h1>Good day, ${escapeHtml(roles.student.name.split(" ")[0])}.</h1><p class="subtitle">Stay informed and find support when you need it.</p></div><button class="button" type="button" data-page="alerts">View all alerts <span aria-hidden="true">→</span></button></div>
+  const student = signedInUser || roles.student;
+  return `<div class="page-heading"><div><p class="eyebrow">YOUR CAMPUS, AT A GLANCE</p><h1>Good day, ${escapeHtml(student.name.split(" ")[0])}.</h1><p class="subtitle">Stay informed and find support when you need it.</p></div><button class="button" type="button" data-page="alerts">View all alerts <span aria-hidden="true">→</span></button></div>
     <div class="grid grid-3">
       ${statCard("Active health alerts", alerts.length, "◉")}
-      ${statCard("Support requests", state.reports.filter(report => report.reporter === roles.student.email).length, "＋")}
+      ${statCard("Support requests", state.reports.filter(report => report.reporter === student.email).length, "＋")}
       ${statCard("Wellbeing resources", 4, "♡")}
     </div>
     <section class="section-space"><div class="card-heading"><h2>Latest campus alerts</h2><button class="text-button" type="button" data-page="alerts">See all</button></div><div class="grid grid-2">${recent.length ? recent.map(alertCard).join("") : emptyState("No active alerts", "There are no current health alerts.")}</div></section>
@@ -240,7 +273,8 @@ function resourceCard(icon, title, copy) {
 }
 
 function renderSupport() {
-  const mine = state.reports.filter(report => report.reporter === roles.student.email);
+  const student = signedInUser || roles.student;
+  const mine = state.reports.filter(report => report.reporter === student.email);
   return `<div class="page-heading"><div><p class="eyebrow">STUDENT SUPPORT</p><h1>Get support</h1><p class="subtitle">Send a demo request to the campus team or review the wellbeing resources.</p></div></div>
     <div class="callout urgent"><strong>For emergencies, call your local emergency number or contact campus staff now.</strong> This demo is not monitored and cannot dispatch help.</div>
     <section class="section-space grid grid-2">
@@ -301,32 +335,196 @@ function emptyState(title, message) {
 
 function canPublish() { return activeRole === "health" || activeRole === "admin"; }
 
-function login(event) {
+async function handleSignIn(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const error = form.querySelector("#login-error");
   const accountType = form.querySelector("#login-role").value;
   const email = form.querySelector("#login-email").value.trim().toLowerCase();
   const password = form.querySelector("#login-password").value;
-  const account = demoAccounts.find(item => item.email === email && item.password === password);
-  const roleMatches = account && (accountType === "student"
-    ? account.role === "student"
-    : account.role !== "student");
+  const submitButton = form.querySelector("[type='submit']");
+  submitButton.disabled = true;
+  error.hidden = true;
+  try {
+    const accounts = loadRegisteredAccounts();
+    const demoAccount = demoAccounts.find(item => item.email === email);
+    const registeredAccount = accounts.find(item => item.email === email);
+    const account = demoAccount || registeredAccount;
+    const correctRole = accountType === "student"
+      ? account?.role === "student"
+      : account?.role !== "student";
+    const passwordMatches = account && await verifyPassword(password, account.passwordHash);
 
-  if (!roleMatches) {
-    error.textContent = "The email, password, or account type is incorrect. Check the sample logins and try again.";
+    if (!correctRole || !passwordMatches) {
+      error.textContent = "Email, password, or account type is incorrect. Check the sample accounts below or create a student account.";
+      error.hidden = false;
+      form.querySelector("#login-password").value = "";
+      return;
+    }
+
+    const profile = roles[account.role];
+    signedInUser = {
+      ...profile,
+      name: account.fullName || profile.name,
+      email: account.email
+    };
+    activeRole = account.role;
+    currentPage = "dashboard";
+    render();
+  } catch (exception) {
+    error.textContent = exception.message || "Sign-in failed. Please try again.";
     error.hidden = false;
-    form.querySelector("#login-password").value = "";
+  } finally {
+    submitButton.disabled = false;
+  }
+}
+
+async function handleRegister(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const error = form.querySelector("#register-error");
+  const success = form.querySelector("#register-success");
+  const name = form.querySelector("#register-name").value.trim();
+  const email = form.querySelector("#register-email").value.trim().toLowerCase();
+  const password = form.querySelector("#register-password").value;
+  const confirmation = form.querySelector("#register-confirm").value;
+  const submitButton = form.querySelector("[type='submit']");
+  error.hidden = true;
+  success.hidden = true;
+
+  if (name.length < 2) {
+    error.textContent = "Enter your full name (at least 2 characters).";
+    error.hidden = false;
     return;
   }
-  activeRole = account.role;
-  currentPage = "dashboard";
-  render();
+  if (!email.endsWith(studentEmailDomain)) {
+    error.textContent = `Use a student email ending in ${studentEmailDomain}.`;
+    error.hidden = false;
+    return;
+  }
+  if (password.length < 8) {
+    error.textContent = "Choose a password with at least 8 characters.";
+    error.hidden = false;
+    return;
+  }
+  if (password !== confirmation) {
+    error.textContent = "The passwords do not match.";
+    error.hidden = false;
+    return;
+  }
+
+  submitButton.disabled = true;
+  try {
+    const accounts = loadRegisteredAccounts();
+    if (demoAccounts.some(account => account.email === email) || accounts.some(account => account.email === email)) {
+      error.textContent = "An account with this email already exists. Sign in instead.";
+      error.hidden = false;
+      return;
+    }
+    accounts.push({
+      role: "student",
+      email,
+      fullName: name,
+      passwordHash: await hashPassword(password),
+      createdAt: new Date().toISOString()
+    });
+    saveRegisteredAccounts(accounts);
+    form.reset();
+    form.querySelector("#register-success").textContent = "Account created on this device. You can now sign in with your university email and password.";
+    success.hidden = false;
+  } catch (exception) {
+    error.textContent = exception.message || "Account creation failed. Please try again.";
+    error.hidden = false;
+  } finally {
+    submitButton.disabled = false;
+  }
+}
+
+function loadRegisteredAccounts() {
+  let saved;
+  try {
+    saved = localStorage.getItem(ACCOUNTS_STORAGE_KEY);
+  } catch (exception) {
+    throw new Error("Browser storage is unavailable. Enable site storage and try again.");
+  }
+  if (!saved) return [];
+  let accounts;
+  try {
+    accounts = JSON.parse(saved);
+  } catch (exception) {
+    throw new Error("Saved accounts are damaged. Clear this site's demo data and create the account again.");
+  }
+  if (!Array.isArray(accounts) || accounts.some(account =>
+    !account || account.role !== "student" || typeof account.email !== "string" ||
+    typeof account.fullName !== "string" || typeof account.passwordHash !== "string" ||
+    !account.passwordHash.startsWith("pbkdf2$")
+  )) {
+    throw new Error("Saved accounts have an invalid format. Clear this site's demo data before continuing.");
+  }
+  return accounts;
+}
+
+function saveRegisteredAccounts(accounts) {
+  try {
+    localStorage.setItem(ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts));
+  } catch (exception) {
+    throw new Error("Could not save your account in this browser. Check available storage and try again.");
+  }
+}
+
+async function hashPassword(password) {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error("Secure password hashing is unavailable. Open the site using HTTPS or localhost.");
+  }
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: passwordIterations, hash: "SHA-256" }, key, 256);
+  return `pbkdf2$${passwordIterations}$${bytesToBase64(salt)}$${bytesToBase64(new Uint8Array(bits))}`;
+}
+
+async function verifyPassword(password, storedHash) {
+  if (storedHash.startsWith("sha256$")) {
+    if (!globalThis.crypto?.subtle) {
+      throw new Error("Secure password checking is unavailable. Open the site using HTTPS or localhost.");
+    }
+    const key = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(password));
+    return bytesToHex(new Uint8Array(key)) === storedHash.slice("sha256$".length);
+  }
+  const [, iterationsText, saltText, expectedHash] = storedHash.split("$");
+  const iterations = Number(iterationsText);
+  if (!Number.isInteger(iterations) || iterations < 100000 || iterations > 500000 ||
+      !saltText || !expectedHash || !globalThis.crypto?.subtle) {
+    throw new Error("The saved password data is invalid. Please recreate the account.");
+  }
+  const salt = base64ToBytes(saltText);
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations, hash: "SHA-256" }, key, 256);
+  return bytesToBase64(new Uint8Array(bits)) === expectedHash;
+}
+
+function bytesToHex(bytes) {
+  return [...bytes].map(byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+  return btoa(binary);
+}
+
+function base64ToBytes(value) {
+  try {
+    return Uint8Array.from(atob(value), char => char.charCodeAt(0));
+  } catch (exception) {
+    throw new Error("The saved password data is invalid. Please recreate the account.");
+  }
 }
 
 function logout() {
   activeRole = null;
+  signedInUser = null;
   currentPage = "dashboard";
+  authView = "signin";
   render();
 }
 
@@ -385,6 +583,7 @@ function submitReport(event) {
   const form = event.currentTarget;
   const type = form.querySelector("#report-type").value;
   const message = form.querySelector("#report-message").value.trim();
+  const student = signedInUser || roles.student;
   if (!type || !message) {
     showToast("Choose a request category and enter a short description.");
     return;
@@ -393,8 +592,8 @@ function submitReport(event) {
     id: Date.now(),
     type,
     message,
-    reporter: roles.student.email,
-    reporterName: roles.student.name,
+    reporter: student.email,
+    reporterName: student.name,
     createdAt: new Date().toISOString(),
     status: "Open"
   });

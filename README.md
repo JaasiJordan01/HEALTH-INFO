@@ -4,7 +4,7 @@ A responsive, browser-based demonstration of the UHealth Alert console project. 
 
 ## Demo sign-in accounts
 
-Select **Student** or **Staff** on the sign-in form, then use one of these sample accounts:
+Choose **Create a student account** to register with an email ending in `@students.cavebndish.ac.ug` and a password of at least 8 characters. Accounts are saved in that browser. Return to **Sign in** to log in. Staff accounts cannot be self-registered; use the sample staff accounts:
 
 | Role | Email | Password |
 | --- | --- | --- |
@@ -14,7 +14,7 @@ Select **Student** or **Staff** on the sign-in form, then use one of these sampl
 | Welfare Officer | `welfare@cavebndish.ac.ug` | `welfare123` |
 | Administrator | `admin@cavebndish.ac.ug` | `admin123` |
 
-The demo validates the email, password, and selected account type in the browser. These public sample credentials are not secure authentication: anyone can inspect or bypass client-side checks.
+Sample passwords are checked against their SHA-256 digests, and newly created student passwords are stored as salted PBKDF2 hashes in browser `localStorage`. This is still only a client-side demo: accounts exist on one device, browser checks can be bypassed, and the sample credentials are public. It does not provide production-grade authentication.
 
 ## Run locally
 
@@ -38,6 +38,6 @@ The site is static and needs no build step.
 
 ## Important limitations
 
-GitHub Pages cannot run the Java program as a backend. This is a front-end demo with no real authentication, server-side authorization, email/SMS delivery, or secure audit trail. Demo edits are stored in the browser's `localStorage` and are not shared with other users or devices. The app deliberately does not collect or track real device location.
+GitHub Pages cannot run the Java program as a backend. This is a front-end demo with no server-side authentication or authorization, email/SMS delivery, or secure audit trail. Accounts and demo edits are stored in the browser's `localStorage` and are not shared with other users or devices. The app deliberately does not collect or track real device location.
 
 Do not use this version with real student accounts, health information, emergency reports, or other sensitive data. A production deployment would need a secure backend, real identity and access management, protected data storage, and appropriate privacy/security review.

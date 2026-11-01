@@ -139,6 +139,10 @@ td { padding: 13px 9px; border-top: 1px solid #edf1ee; color: #43544a; font-size
 .login-form { padding: 0 42px 27px; }
 .login-form .card-heading { margin-bottom: 15px; }
 .login-error { margin: 13px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--red-soft); color: var(--red); font-size: 12px; }
+.login-success { margin: 13px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--mint); color: var(--green-dark); font-size: 12px; }
+.field-hint { color: var(--muted); font-size: 10px; }
+.auth-switch { margin: 16px 0 0; color: var(--muted); text-align: center; font-size: 12px; }
+.auth-switch .text-button { margin-left: 3px; }
 .demo-credentials { padding: 20px 42px 24px; border-top: 1px solid var(--line); background: #fbfcfb; }
 .demo-credentials h2 { margin: 0 0 5px; font-size: 14px; }
 .demo-credentials > p { margin: 0 0 12px; color: var(--muted); font-size: 11px; }
