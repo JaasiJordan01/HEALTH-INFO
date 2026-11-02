@@ -28,7 +28,8 @@ const initialState = {
   reports: [],
   notifications: [
     { id: 1, title: "Welcome to UHealth Alert", message: "Your demo account is ready. This browser-only version does not send real notifications.", createdAt: daysAgo(1), read: false }
-  ]
+  ],
+  profiles: {}
 };
 
 function hoursAgo(hours) { return new Date(Date.now() - hours * 3600000).toISOString(); }
@@ -50,7 +51,13 @@ function loadState() {
     if (!Array.isArray(parsed.alerts) || !Array.isArray(parsed.reports) || !Array.isArray(parsed.notifications)) {
       throw new Error("Saved demo data has an unexpected format.");
     }
-    return parsed;
+    return {
+      ...structuredClone(initialState),
+      ...parsed,
+      profiles: parsed.profiles && typeof parsed.profiles === "object" && !Array.isArray(parsed.profiles)
+        ? parsed.profiles
+        : {}
+    };
   } catch (error) {
     console.error("Could not load UHealth demo data:", error);
     return structuredClone(initialState);
@@ -170,7 +177,7 @@ function renderRegisterForm() {
 
 function renderShell() {
   const nav = activeRole === "student"
-    ? [["dashboard", "⌂", "Overview"], ["alerts", "◉", "Health alerts"], ["wellbeing", "♡", "Wellbeing"], ["reports", "＋", "Get support"]]
+    ? [["dashboard", "⌂", "Overview"], ["alerts", "◉", "Health alerts"], ["wellbeing", "♡", "Wellbeing"], ["reports", "＋", "Get support"], ["safety", "盾", "Safety & privacy"]]
     : [["dashboard", "⌂", "Overview"], ["alerts", "◉", "Health alerts"], ["reports", "▤", "Reports"], ["students", "♧", "Students"]];
   const person = signedInUser || roles[activeRole];
   const pageTitle = pageTitles()[currentPage] || "Overview";
@@ -195,7 +202,7 @@ function renderShell() {
 }
 
 function pageTitles() {
-  return { dashboard: "Overview", alerts: "Campus health alerts", wellbeing: "Student wellbeing", reports: activeRole === "student" ? "Get support" : "Emergency reports", students: "Student directory", audit: "Activity log" };
+  return { dashboard: "Overview", alerts: "Campus health alerts", wellbeing: "Student wellbeing", reports: activeRole === "student" ? "Get support" : "Emergency reports", students: "Student directory", audit: "Activity log", safety: "Safety & privacy" };
 }
 
 function renderPage() {
@@ -203,6 +210,7 @@ function renderPage() {
     case "alerts": return renderAlerts();
     case "wellbeing": return renderWellbeing();
     case "reports": return activeRole === "student" ? renderSupport() : renderReports();
+    case "safety": return activeRole === "student" ? renderSafety() : renderStaffDashboard();
     case "students": return renderStudents();
     case "audit": return renderAudit();
     default: return activeRole === "student" ? renderStudentDashboard() : renderStaffDashboard();
@@ -214,11 +222,6 @@ function renderStudentDashboard() {
   const recent = alerts.slice(0, 2);
   const student = signedInUser || roles.student;
   return `<div class="page-heading"><div><p class="eyebrow">YOUR CAMPUS, AT A GLANCE</p><h1>Good day, ${escapeHtml(student.name.split(" ")[0])}.</h1><p class="subtitle">Stay informed and find support when you need it.</p></div><button class="button" type="button" data-page="alerts">View all alerts <span aria-hidden="true">→</span></button></div>
-    <div class="grid grid-3">
-      ${statCard("Active health alerts", alerts.length, "◉")}
-      ${statCard("Support requests", state.reports.filter(report => report.reporter === student.email).length, "＋")}
-      ${statCard("Wellbeing resources", 4, "♡")}
-    </div>
     <section class="section-space"><div class="card-heading"><h2>Latest campus alerts</h2><button class="text-button" type="button" data-page="alerts">See all</button></div><div class="grid grid-2">${recent.length ? recent.map(alertCard).join("") : emptyState("No active alerts", "There are no current health alerts.")}</div></section>
     <section class="section-space grid grid-2">
       <div class="card"><div class="card-heading"><h2>Need a hand?</h2><span class="resource-icon" aria-hidden="true">♡</span></div><p class="subtitle">Explore counselling information or send a demo request to campus support.</p><div class="form-actions"><button class="button secondary" type="button" data-page="wellbeing">Explore wellbeing</button><button class="button" type="button" data-page="reports">Get support</button></div></div>
@@ -230,7 +233,6 @@ function renderStaffDashboard() {
   const openReports = state.reports.filter(report => report.status === "Open");
   const alerts = activeAlerts();
   return `<div class="page-heading"><div><p class="eyebrow">STAFF WORKSPACE</p><h1>Campus overview</h1><p class="subtitle">Review demo health alerts and support requests.</p></div>${canPublish() ? `<button class="button" type="button" data-action="show-alert-form">＋ Publish alert</button>` : ""}</div>
-    <div class="grid grid-3">${statCard("Active alerts", alerts.length, "◉")}${statCard("Open reports", openReports.length, "＋")}${statCard("Demo students", 3, "♧")}</div>
     ${canPublish() ? `<section id="alert-form-area" class="section-space" hidden>${renderAlertForm()}</section>` : ""}
     <section class="section-space grid grid-2">
       <div class="card"><div class="card-heading"><h2>Latest alerts</h2><button class="text-button" type="button" data-page="alerts">View all</button></div><div class="stack">${alerts.slice(0, 3).map(alertRow).join("") || emptyState("No active alerts", "Publish an alert to share a campus update.")}</div></div>
@@ -258,25 +260,25 @@ function renderWellbeing() {
   return `<div class="page-heading"><div><p class="eyebrow">SUPPORT FOR YOU</p><h1>Wellbeing resources</h1><p class="subtitle">A starting point for finding support and taking care of yourself.</p></div></div>
     <div class="callout"><strong>If you or someone else is in immediate danger, contact local emergency services or campus staff directly.</strong> This website is a demo and is not monitored for emergencies.</div>
     <section class="section-space grid grid-2">
-      ${resourceCard("☏", "University Counselling Centre", "Free, confidential sessions. Block C, Room 12. Monday–Friday, 08:00–17:00.")}
-      ${resourceCard("♡", "24/7 Crisis Line", "Call +256 800 200 300 any time, day or night.")}
-      ${resourceCard("☻", "Anonymous Peer Support Chat", "Anonymous peer supporters are online 18:00–23:00 daily.")}
-      ${resourceCard("✦", "Exam Stress Toolkit", "Try 25-minute focus blocks, keep a regular sleep routine, and take real breaks.")}
+      ${resourceCard("☏", "Contact campus welfare", "Email the campus welfare team to ask about counselling and student support.", `mailto:${roles.welfare.email}?subject=Student%20wellbeing%20support`)}
+      ${resourceCard("♡", "WHO stress management guide", "Practical skills for coping with stress, from the World Health Organization.", "https://www.who.int/publications/i/item/9789240003927")}
+      ${resourceCard("☻", "Find a helpline", "Find a local mental health support line by country.", "https://findahelpline.com/")}
+      ${resourceCard("✦", "Everyday wellbeing", "Try a short break, a regular sleep routine, gentle movement, or talking with someone you trust.")}
     </section>
     <section class="section-space card"><div class="card-heading"><h2>Confidential self-check</h2><span class="badge">Private demo</span></div><p class="subtitle">This non-diagnostic check-in is processed only in this page and is not saved. It cannot replace advice from a qualified professional.</p>
       <form id="self-check-form" class="section-space"><div class="form-grid">${["Feeling nervous, anxious or on edge", "Not being able to stop or control worrying", "Little interest or pleasure in doing things", "Feeling down, depressed or hopeless", "Trouble falling or staying asleep"].map((question, index) => `<div class="field"><label for="check-${index}">${question}</label><select id="check-${index}" required><option value="">Select…</option><option value="0">0 — Not at all</option><option value="1">1 — Several days</option><option value="2">2 — More than half the days</option><option value="3">3 — Nearly every day</option></select></div>`).join("")}</div><div class="form-actions"><button class="button" type="submit">See information</button></div></form><div id="self-check-result" class="section-space" aria-live="polite"></div>
     </section>`;
 }
 
-function resourceCard(icon, title, copy) {
-  return `<article class="card resource-row"><span class="resource-icon" aria-hidden="true">${icon}</span><div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(copy)}</p></div></article>`;
+function resourceCard(icon, title, copy, href = "") {
+  return `<article class="card resource-row"><span class="resource-icon" aria-hidden="true">${icon}</span><div><h3>${escapeHtml(title)}</h3><p>${escapeHtml(copy)}</p>${href ? `<a href="${escapeHtml(href)}" ${href.startsWith("https://") ? 'target="_blank" rel="noopener noreferrer"' : ""}>Open resource ↗</a>` : ""}</div></article>`;
 }
 
 function renderSupport() {
   const student = signedInUser || roles.student;
   const mine = state.reports.filter(report => report.reporter === student.email);
   return `<div class="page-heading"><div><p class="eyebrow">STUDENT SUPPORT</p><h1>Get support</h1><p class="subtitle">Send a demo request to the campus team or review the wellbeing resources.</p></div></div>
-    <div class="callout urgent"><strong>For emergencies, call your local emergency number or contact campus staff now.</strong> This demo is not monitored and cannot dispatch help.</div>
+    <div class="callout urgent"><strong>For emergencies, call your local emergency number or contact campus staff now.</strong> This demo is not monitored and cannot dispatch help. If you have saved an emergency contact, use the Safety & privacy page to call, text, or email them.</div>
     <section class="section-space grid grid-2">
       <div class="card"><div class="card-heading"><h2>Send a support request</h2></div><form id="report-form"><div class="form-grid"><div class="field full"><label for="report-type">What do you need help with?</label><select id="report-type" required><option value="">Choose a category</option><option>Health concern</option><option>Safety concern</option><option>Wellbeing support</option><option>Other</option></select></div><div class="field full"><label for="report-message">Brief description (demo only)</label><textarea id="report-message" maxlength="500" required placeholder="Do not include sensitive or identifying information."></textarea></div></div><div class="form-actions"><button class="button" type="submit">Submit demo request</button></div></form></div>
       <div class="card"><div class="card-heading"><h2>Your demo requests</h2></div><div class="stack">${mine.length ? mine.slice().reverse().map(reportRow).join("") : emptyState("No requests yet", "Requests you submit in this browser will appear here.")}</div></div>
@@ -287,7 +289,86 @@ function renderReports() {
   const reports = state.reports.slice().reverse();
   return `<div class="page-heading"><div><p class="eyebrow">STAFF RESPONSE</p><h1>Support reports</h1><p class="subtitle">Demo queue of student-submitted requests. No real notifications are sent.</p></div></div>
     <div class="callout warning"><strong>Demo data only.</strong> Do not use this queue to handle emergencies or actual student health information.</div>
-    <section class="section-space card"><div class="card-heading"><h2>All requests <span class="badge">${reports.length}</span></h2></div><div class="stack">${reports.length ? reports.map(reportRow).join("") : emptyState("No reports submitted", "New demo student requests will appear here.")}</div></section>`;
+    ${renderEmergencyAccessPanel()}
+    <section class="section-space card"><div class="card-heading"><h2>Support requests</h2></div><div class="stack">${reports.length ? reports.map(reportRow).join("") : emptyState("No reports submitted", "New demo student requests will appear here.")}</div></section>`;
+}
+
+function currentStudentProfile() {
+  const email = (signedInUser || roles.student).email;
+  const profile = state.profiles[email];
+  return profile && typeof profile === "object" ? profile : {};
+}
+
+function renderSafety() {
+  const profile = currentStudentProfile();
+  const email = validContactEmail(profile.emergencyEmail);
+  const phone = validContactPhone(profile.emergencyPhone);
+  const contactName = String(profile.emergencyName || "").trim();
+  return `<div class="page-heading"><div><p class="eyebrow">YOUR PRIVACY & SAFETY</p><h1>Safety & privacy</h1><p class="subtitle">Choose your consent preferences and keep emergency contact options close.</p></div></div>
+    <div class="callout warning"><strong>Static demo:</strong> Your settings are stored only in this browser. No GPS is accessed or stored, and role checks here are not secure authorization. Never enter real personal or emergency information.</div>
+    <section class="section-space grid grid-2">
+      <div class="card"><div class="card-heading"><h2>Consent preferences</h2><span class="badge">Location off by default</span></div>
+        <form id="safety-profile-form">
+          <div class="field"><label for="location-consent"><input id="location-consent" type="checkbox" ${profile.locationConsent ? "checked" : ""}> I consent to optional location sharing if a secure campus service enables it.</label></div>
+          <p class="list-copy section-space">This demo does not request browser location, track you, or store coordinates. In a real deployment, location must be requested only after consent and restricted by server-verified staff authorization.</p>
+          <div class="field section-space"><label for="emergency-access-consent"><input id="emergency-access-consent" type="checkbox" ${profile.emergencyAccessConsent ? "checked" : ""}> I consent to Health Officer and Safety Team staff viewing my emergency contact details in this demo.</label></div>
+          <p class="list-copy section-space">This permission is a demonstration only; the static app cannot enforce access control securely.</p>
+          <div class="form-actions"><button class="button" type="submit">Save consent preferences</button></div>
+        </form>
+      </div>
+      <div class="card"><div class="card-heading"><h2>Emergency contact & device</h2></div>
+        <form id="emergency-profile-form">
+          <div class="form-grid">
+            <div class="field full"><label for="emergency-name">Contact name</label><input id="emergency-name" maxlength="80" autocomplete="off" value="${escapeHtml(profile.emergencyName || "")}" placeholder="Name (optional)"></div>
+            <div class="field"><label for="emergency-email">Contact email</label><input id="emergency-email" type="email" maxlength="120" autocomplete="off" value="${escapeHtml(profile.emergencyEmail || "")}" placeholder="name@example.com"></div>
+            <div class="field"><label for="emergency-phone">Contact phone</label><input id="emergency-phone" type="tel" maxlength="24" autocomplete="off" value="${escapeHtml(profile.emergencyPhone || "")}" placeholder="+256 …"></div>
+            <div class="field full"><label for="device-name">Register a device label</label><input id="device-name" maxlength="60" autocomplete="off" value="${escapeHtml(profile.deviceName || "")}" placeholder="e.g. My phone"></div>
+          </div>
+          <p class="list-copy section-space">Only a device label is saved; this demo does not collect a device ID or enable push notifications.</p>
+          <div class="form-actions"><button class="button" type="submit">Save contact details</button></div>
+        </form>
+      </div>
+    </section>
+    <section class="section-space card"><div class="card-heading"><h2>Contact options</h2></div>
+      <p class="subtitle">${contactName ? `Emergency contact: ${escapeHtml(contactName)}.` : "Add an emergency contact above to enable direct call, text, and email links."} Selecting a link opens your device's phone or email app; it does not send anything automatically.</p>
+      <div class="form-actions">
+        ${phone ? `<a class="button danger" href="tel:${escapeHtml(phone)}">Call contact</a><a class="button secondary" href="sms:${escapeHtml(phone)}">Text contact</a>` : ""}
+        ${email ? `<a class="button secondary" href="mailto:${escapeHtml(email)}?subject=UHealth%20support">Email contact</a>` : ""}
+        <a class="button secondary" href="mailto:${escapeHtml(roles.welfare.email)}?subject=Student%20support">Email campus welfare</a>
+      </div>
+    </section>`;
+}
+
+function renderEmergencyAccessPanel() {
+  if (!canAccessEmergencyDetails()) {
+    return `<section class="section-space callout"><strong>Emergency details are restricted.</strong> Only the Health Officer and Safety Team roles can view contact details in this demo.</section>`;
+  }
+  const profiles = Object.entries(state.profiles).filter(([, profile]) =>
+    profile && typeof profile === "object" && profile.emergencyAccessConsent
+  );
+  return `<section class="section-space card"><div class="card-heading"><h2>Student safety details</h2></div>
+    ${profiles.length ? `<div class="stack">${profiles.map(([studentEmail, profile]) => {
+      const email = validContactEmail(profile.emergencyEmail);
+      const phone = validContactPhone(profile.emergencyPhone);
+      const hasContact = email || phone;
+      return `<div class="list-row"><div class="list-main"><div class="list-title">${escapeHtml(profile.emergencyName || "Emergency contact")} <span class="badge open">Access consented</span></div><p class="list-copy">Student: ${escapeHtml(studentEmail)} · Location consent: ${profile.locationConsent ? "Granted" : "Not granted"} · No location is collected by this demo.</p>${profile.deviceName ? `<p class="list-copy">Registered device: ${escapeHtml(profile.deviceName)}</p>` : ""}${hasContact ? `<div class="form-actions">${phone ? `<a class="button secondary small" href="tel:${escapeHtml(phone)}">Call</a>` : ""}${email ? `<a class="button secondary small" href="mailto:${escapeHtml(email)}">Email</a>` : ""}</div>` : `<p class="list-copy">No contact details saved.</p>`}</div></div>`;
+    }).join("")}</div>` : `<div class="empty-state">No students have granted contact access.</div>`}
+    <p class="list-copy section-space">This browser-only role gate is not secure authorization; never use it for real student data.</p>
+  </section>`;
+}
+
+function validContactEmail(value) {
+  const email = String(value || "").trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
+}
+
+function validContactPhone(value) {
+  const phone = String(value || "").replace(/[^\d+]/g, "");
+  return /^\+?\d{7,15}$/.test(phone) ? phone : "";
+}
+
+function canAccessEmergencyDetails() {
+  return activeRole === "health" || activeRole === "safety";
 }
 
 function reportRow(report) {
@@ -319,10 +400,6 @@ function renderAlertForm() {
     <div class="field"><label for="alert-severity">Severity</label><select id="alert-severity"><option>Low</option><option>Moderate</option><option>High</option><option>Critical</option></select></div>
     <div class="field"><label for="alert-days">Expires after (days)</label><input id="alert-days" type="number" min="1" max="365" value="7" required></div>
   </div><div class="form-actions"><button class="button secondary" type="button" data-action="hide-alert-form">Cancel</button><button class="button" type="submit">Publish alert</button></div></form></div>`;
-}
-
-function statCard(label, value, icon) {
-  return `<div class="card stat-card"><div><div class="stat-label">${escapeHtml(label)}</div><div class="stat-value">${escapeHtml(value)}</div></div><div class="stat-icon" aria-hidden="true">${icon}</div></div>`;
 }
 
 function alertRow(alert) {
@@ -548,6 +625,47 @@ function bindPageActions() {
   document.querySelector("#alert-form")?.addEventListener("submit", publishAlert);
   document.querySelector("#report-form")?.addEventListener("submit", submitReport);
   document.querySelector("#self-check-form")?.addEventListener("submit", selfCheck);
+  document.querySelector("#safety-profile-form")?.addEventListener("submit", saveConsentPreferences);
+  document.querySelector("#emergency-profile-form")?.addEventListener("submit", saveEmergencyProfile);
+}
+
+function saveConsentPreferences(event) {
+  event.preventDefault();
+  if (activeRole !== "student") return;
+  const student = signedInUser || roles.student;
+  const profile = state.profiles[student.email] || {};
+  profile.locationConsent = document.querySelector("#location-consent").checked;
+  profile.emergencyAccessConsent = document.querySelector("#emergency-access-consent").checked;
+  state.profiles[student.email] = profile;
+  if (saveState()) {
+    render();
+    showToast("Consent preferences saved in this browser.");
+  }
+}
+
+function saveEmergencyProfile(event) {
+  event.preventDefault();
+  if (activeRole !== "student") return;
+  const form = event.currentTarget;
+  const email = form.querySelector("#emergency-email").value.trim();
+  const phone = form.querySelector("#emergency-phone").value.trim();
+  if ((email && !validContactEmail(email)) || (phone && !validContactPhone(phone))) {
+    showToast("Enter a valid contact email and a phone number with 7 to 15 digits.");
+    return;
+  }
+  const student = signedInUser || roles.student;
+  const profile = state.profiles[student.email] || {};
+  const deviceName = form.querySelector("#device-name").value.trim();
+  profile.emergencyName = form.querySelector("#emergency-name").value.trim();
+  profile.emergencyEmail = email;
+  profile.emergencyPhone = phone;
+  profile.deviceName = deviceName;
+  profile.deviceRegisteredAt = deviceName ? new Date().toISOString() : "";
+  state.profiles[student.email] = profile;
+  if (saveState()) {
+    render();
+    showToast("Emergency contact and device label saved in this browser.");
+  }
 }
 
 function publishAlert(event) {

@@ -1,6 +1,13 @@
 # HEALTH-INFO — UHealth Alert (GitHub Pages demo)
 
-A responsive, browser-based demonstration of the UHealth Alert console project. It includes student and staff views for campus alerts, wellbeing resources, support requests, and a sample staff queue. The interface uses red, green, and blue accents and adapts to mobile screens.
+A responsive, browser-based demonstration of the UHealth Alert console project. It includes campus health alerts, mental wellbeing resources, support requests, student safety preferences, emergency contact links, and a sample staff queue. The interface uses red, green, and blue accents and adapts to mobile screens.
+
+## What the demo can do
+
+- Students can view campus health alerts and wellbeing information; Health Officers and Administrators can publish demo alerts.
+- Students can save a location-consent preference (off by default). This static demo never requests GPS or stores location. Real location sharing needs explicit consent and secure, server-enforced staff authorization.
+- Students can save an emergency contact email/phone and a device label. Call, text, and email links open the device's corresponding app; they do not send messages automatically. Health Officer and Safety Team demo roles can view contact details only when the student has opted in.
+- Students can submit local demo support requests, and staff can review and resolve them in this browser.
 
 ## Demo sign-in accounts
 
@@ -14,7 +21,7 @@ Choose **Create a student account** to register with an email ending in `@studen
 | Welfare Officer | `welfare@cavendish.ac.ug` | `welfare123` |
 | Administrator | `admin@cavendish.ac.ug` | `admin123` |
 
-Sample passwords are checked against their SHA-256 digests, and newly created student passwords are stored as salted PBKDF2 hashes in browser `localStorage`. This is still only a client-side demo: accounts exist on one device, browser checks can be bypassed, and the sample credentials are public. It does not provide production-grade authentication.
+Sample passwords are checked against their SHA-256 digests, and newly created student passwords are stored as salted PBKDF2 hashes in browser `localStorage`. This is still only a client-side demo: accounts exist on one device, browser checks can be bypassed, and the sample credentials are public. It does not provide production-grade authentication. The staff contact-access restriction is also only a client-side demonstration, not real authorization.
 
 ## Run locally
 
@@ -38,6 +45,6 @@ The site is static and needs no build step.
 
 ## Important limitations
 
-GitHub Pages cannot run the Java program as a backend. This is a front-end demo with no server-side authentication or authorization, email/SMS delivery, or secure audit trail. Accounts and demo edits are stored in the browser's `localStorage` and are not shared with other users or devices. The app deliberately does not collect or track real device location.
+GitHub Pages cannot run the Java program as a backend. This is a front-end demo with no server-side authorization, email/SMS delivery, push notifications, location tracking, or secure audit trail. Accounts, demo edits, and contact details are stored in the browser's `localStorage` and are not shared with other users or devices.
 
-Do not use this version with real student accounts, health information, emergency reports, or other sensitive data. A production deployment would need a secure backend, real identity and access management, protected data storage, and appropriate privacy/security review.
+Do not use this version with real student accounts, health information, emergency reports, location, or other sensitive data. A production deployment would need a secure backend, real identity and access management, protected data storage, verified emergency contacts, notification delivery, and appropriate privacy/security review.
